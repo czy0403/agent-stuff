@@ -1,62 +1,43 @@
 ---
 name: orchestrate
-description: Coordinate multiple Codex agents with bounded scope, clear ownership, efficient waiting, minimal verification, and safe failure handling. Use when the user explicitly requests subagents, parallel work, task decomposition, collaboration, or invokes $orchestrate; otherwise stay with a single agent.
+description: Decide whether multiple Codex agents will shorten the critical path, then coordinate only independent, non-overlapping subtasks with clear ownership and minimal overhead. Use when the user asks for subagents, parallel work, task decomposition, collaboration, or invokes $orchestrate. Invoking it does not require spawning agents.
 ---
 
 # Agent 协同编排
 
-主 Agent 负责范围、决策、整合和最终汇总。用户明确的代理数量、类型、模型、权限、文件范围、并行方式、输出协议和失败处理优先于本 skill 的默认值。
+目标是更快完成任务，不是使用更多代理。主 Agent 负责范围、关键路径、整合和最终结果；用户明确指定的数量、模型、权限和分工优先。
 
-## 1. 范围冻结
+## 1. 先判断是否值得并行
 
-开始前记录一张简短的范围卡片：目标、Definition of Done、允许修改的文件、非目标、必要验证和已知 baseline 失败。
+先读取项目指令和工作区状态，再记录范围卡：目标、DoD、允许改动、非目标、必要验证、baseline。
 
-- 未明确要求协作时使用单 Agent；小范围、单模块、只读或单一测试任务不主动拆分。
-- 范围冻结后，不主动加入优化、兼容性、边界补强、重构或新的审计事项。
-- 新发现只分为“阻塞”或“非阻塞”：编译失败、当前改动直接导致的测试失败和明确验收失败才允许修改；其他问题只记录，不扩大任务。
-- 开始修改前读取适用的项目指令文件（如 `AGENTS.md`），并记录工作区基线。不得重置、清理或覆盖用户已有改动。
+只有以下条件全部成立才启动子代理：
 
-## 2. 拆分与启动
+- 至少有两个属于 DoD 的独立子任务；
+- 文件、接口或调查范围不重叠；
+- 主 Agent 有不重复的工作可同步推进；
+- 预计“最慢子任务 + 协调整合”比单 Agent 更快。
 
-- 只有存在真实的文件、模块或问题依赖时才拆分；无依赖任务并行，有依赖任务按波次串行。
-- 每个文件和公共接口只能有一个 owner。共享工作区时代理不得修改越界文件、覆盖他人改动或继续委派。
-- 公共类型、API 或数据契约未冻结前，不启动依赖它的后续实现；波次切换只做一次交付物和接口冲突检查，必要时运行定向测试。
-- 启动 prompt 只传必要上下文，包含目标、ownership、允许/禁止操作、交付物、Definition of Done、必要测试、预期里程碑和输出预算；默认不继承完整历史。
-- 未指定代理类型、模型或推理强度时使用 `model=gpt-5.6-luna`、`reasoning_effort=max`；用户显式指定的代理类型、模型或 effort 优先，不得覆盖；只读侦察可按项目规则使用快速 worker，但不得修改文件或继续委派。
+否则使用单 Agent。调用 `$orchestrate` 不等于必须 spawn；单故障、单模块、小范围和只读任务默认不拆。
 
-## 3. 等待与代理退出
+## 2. 委派而不重复
 
-时间预算只用于提醒，不触发 kill、重启或重做；达到预算仍有进展就继续。
+- 当前下一步依赖的阻塞任务留给主 Agent，只委派可并行的 sidecar。
+- 每个文件和公共接口只有一个 owner；主 Agent 不重做已委派范围，子代理不得继续委派。
+- 默认最多两个子代理。未指定时使用 `model=gpt-5.6-luna`；一般任务使用 `reasoning_effort=high`，仅在复杂且质量优先时使用 `max`。用户指定优先。
+- Prompt 只包含目标、ownership、边界、交付物、DoD、必要验证和输出预算。
+- 新发现只分为阻塞或非阻塞。首个被证实的根因出现后立即收敛，请其余代理提交 handoff，不再扩展调查。
 
-- 需要结果时只请求一次 checkpoint；有进展就继续。只有明确持续无进展、明显循环、越权、不可恢复失败或用户取消时，先收 partial result/handoff 再安全取消；不要固定轮询或按时间自动终止。
-- `active` 状态不能单独证明进展或失败；不得重复实现同一子任务或轮询已终止的 session。
+## 3. 正确等待
 
-发生 compaction 后只根据范围卡片和已有证据继续，不重新扫描仓库或重复已通过的检查。
+- 主 Agent 先推进不重叠工作，只在下一步确实被阻塞时等待；同一目标只保留一条等待链。
+- 若外层 `functions.exec` 返回 `Script running with cell ID ...`，先用该 `cell_id` 调用 `functions.wait` 直到完成，再操作相关代理。
+- timeout、`active` 或 compaction 都不等于失败；不要因此重启、重复实现或中断代理。
+- 仅在用户取消、明确循环、越权或不可恢复失败时结束代理；先取得 final/partial handoff。`interrupt` 不用于催促。
 
-## 4. 验证与收尾
+## 4. 整合与验收
 
-- 按变更影响面运行最少必要验证：叶子代理只跑 ownership 内的定向测试，主 Agent 只跑受影响模块；全量测试、完整 E2E 和生产构建仅在用户要求或最终验收时各执行一次。简要说明测试为何足够、为何不需要更多；无运行时影响的文档或 skill 改动不运行代码测试。
-- 直接复用已通过的检查，不重复执行；测试只返回摘要和真实退出码，已知 baseline 失败不作为本次回归处理。
-- 进入收尾后最多允许一轮“修复阻塞问题 → 只重跑受影响检查”。不再启动最终审计、兼容性审计、边界补强或新的优化。
-- 主体功能和必要检查通过后，按项目规则执行一次必要的差异检查（如 Git 项目中的 `git diff --check`），直接汇总并结束。
-
-```text
-范围冻结 → 实现 → 必要验证 → 一次阻塞修复 → 差异检查 → 汇总并结束
-```
-
-构建、测试、打包、部署或 CI 重现须遵守项目规则：用户未指定执行环境时先询问，不擅自选择本地或远程环境；远程环境不得执行 Git 操作。
-
-## 5. 失败边界与汇总
-
-- 失败不自动重试；只有明确修复后的受影响检查可重跑一次，或对幂等启动失败、临时连接错误、失效 session、基础设施超时重试一次。不得更换用户指定的代理类型。
-- 代理中断或终止时记录 partial result 和原因；未经主 Agent 检查不得宣称成功。
-- 用户未指定输出格式时，使用：
-
-  ```text
-  协作状态：成功 / 部分完成 / 失败
-  代理结果：按标签列出状态、partial result 和耗时
-  产物与验证：变更文件及实际测试证据
-  阻塞与风险：未完成事项、已知 baseline/非阻塞问题和停止原因
-  ```
-
-- 汇总完成后不得追加审计轮次。只有用户新的指令才能重新打开已结束的范围。
+- 检查 handoff 和改动，复用已通过的验证，不重复运行无关测试。
+- 以用户的真实 DoD 验收；线上任务修复必须重试原任务并确认最终状态和关键产物。
+- 只运行受影响范围的必要检查，最后执行一次差异检查；不要追加审计、优化或新代理。
+- 汇总父子代理的结果、耗时、验证、未完成项和风险；成本统计包含所有代理。
