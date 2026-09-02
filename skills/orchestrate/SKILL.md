@@ -24,9 +24,11 @@ description: Decide whether multiple Codex agents will shorten the critical path
 
 - 当前下一步依赖的阻塞任务留给主 Agent，只委派可并行的 sidecar。
 - 每个文件和公共接口只有一个 owner；主 Agent 不重做已委派范围，子代理不得继续委派。
-- 默认最多两个子代理。未指定时使用 `model=gpt-5.6-luna`；一般任务使用 `reasoning_effort=high`，仅在复杂且质量优先时使用 `max`。用户指定优先。
+- 默认同时运行不超过两个子代理；已完成或关闭的代理不计入并发数。若仍有独立且未完成的 DoD 任务，可按波次继续创建，但不得超过平台并发上限。未指定时使用 `model=gpt-5.6-luna`；一般任务使用 `reasoning_effort=high`，仅在复杂且质量优先时使用 `max`。用户指定优先。
 - Prompt 只包含目标、ownership、边界、交付物、DoD、必要验证和输出预算。
 - 新发现只分为阻塞或非阻塞。首个被证实的根因出现后立即收敛，请其余代理提交 handoff，不再扩展调查。
+
+- 每波结束后，只有仍有未完成的独立 DoD 任务才启动下一波；关闭代理不会自动补建代理。
 
 ## 3. 正确等待
 
@@ -34,6 +36,7 @@ description: Decide whether multiple Codex agents will shorten the critical path
 - 若外层 `functions.exec` 返回 `Script running with cell ID ...`，先用该 `cell_id` 调用 `functions.wait` 直到完成，再操作相关代理。
 - timeout、`active` 或 compaction 都不等于失败；不要因此重启、重复实现或中断代理。
 - 仅在用户取消、明确循环、越权或不可恢复失败时结束代理；先取得 final/partial handoff。`interrupt` 不用于催促。
+- 关闭运行中的代理后，先确认其进入终态，再启动下一代理。
 
 ## 4. 整合与验收
 
