@@ -24,7 +24,7 @@ description: Decide whether multiple Codex agents will shorten the critical path
 
 - 当前下一步依赖的阻塞任务留给主 Agent，只委派可并行的 sidecar。
 - 每个文件和公共接口只有一个 owner；主 Agent 不重做已委派范围，子代理不得继续委派。
-- 默认同时运行不超过两个子代理；已完成或关闭的代理不计入并发数。若仍有独立且未完成的 DoD 任务，可按波次继续创建，但不得超过平台并发上限。未指定时使用 `model=gpt-5.6-luna`；一般任务使用 `reasoning_effort=high`，仅在复杂且质量优先时使用 `max`。用户指定优先。
+- 默认同时活跃两个子代理；若有三个以上独立、低耦合且未完成的 DoD 子任务，可扩展至平台上限，但不为凑满而创建。已完成或关闭的代理不占并发名额，无固定累计总数。未指定时使用 `model=gpt-5.6-luna`；一般任务使用 `reasoning_effort=high`，仅在复杂且质量优先时使用 `max`。用户指定优先。
 - Prompt 只包含目标、ownership、边界、交付物、DoD、必要验证和输出预算。
 - 新发现只分为阻塞或非阻塞。首个被证实的根因出现后立即收敛，请其余代理提交 handoff，不再扩展调查。
 
