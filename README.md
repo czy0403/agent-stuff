@@ -1,6 +1,6 @@
 # Agent Stuff
 
-可复用的 agent skills 集合，当前包含适用于 Codex 工作流的六个 skill：
+可复用的 agent skills 集合，当前包含适用于 Codex 工作流的七个 skill：
 
 - `orchestrate`：跨项目协调 Codex 子代理，控制范围、生命周期、验证和失败边界。
 - `commit`：创建简洁、规范的 Conventional Commits 提交。
@@ -8,6 +8,7 @@
 - `session-performance`：只读分析 Codex session 的性能、延迟、吞吐与近期趋势。
 - `read-codex-sessions`：按明确的 session UUID 读取本地 Codex 会话问答。
 - `github-weekly-summary`：先发现近期参与仓库，再逐分支查询过去 7 天的 GitHub 提交，按项目简洁总结工作成果。
+- `compare-models`：通过 Artificial Analysis 比较模型价格、能力指数与任务成本。
 
 ## 查看可用 skill
 
@@ -64,7 +65,7 @@ npx -y skills add . --skill commit
 
 ```bash
 npx -y skills add . \
-  --skill orchestrate commit session-health session-performance read-codex-sessions github-weekly-summary
+  --skill orchestrate commit session-health session-performance read-codex-sessions github-weekly-summary compare-models
 ```
 
 添加 `-g` 可以安装到用户级目录：
@@ -85,7 +86,7 @@ npx -y skills add https://github.com/dwssef/agent-stuff.git --skill commit
 
 ```bash
 npx -y skills add https://github.com/dwssef/agent-stuff.git \
-  --skill orchestrate commit session-health session-performance read-codex-sessions github-weekly-summary
+  --skill orchestrate commit session-health session-performance read-codex-sessions github-weekly-summary compare-models
 ```
 
 只安装给 Codex 使用：
