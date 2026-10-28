@@ -48,11 +48,13 @@ class CompareModelsTests(unittest.TestCase):
     def test_default_metrics_and_per_call_changes(self):
         self.assertEqual(
             compare_models.select_metrics(),
-            ["input-price", "output-price", "task-cost", "intelligence", "coding", "agentic"],
+            ["input-price", "output-price", "task-cost", "intelligence", "coding", "agentic",
+             "output-speed", "time-to-first-token", "time-to-first-answer-token", "end-to-end-response-time"],
         )
         self.assertEqual(
             compare_models.select_metrics(["output-speed", "context_window"], ["agentic"]),
-            ["input-price", "output-price", "task-cost", "intelligence", "coding", "output-speed", "context-window"],
+            ["input-price", "output-price", "task-cost", "intelligence", "coding", "output-speed",
+             "time-to-first-token", "time-to-first-answer-token", "end-to-end-response-time", "context-window"],
         )
 
     def test_unknown_or_all_excluded_metrics_are_rejected(self):

@@ -20,6 +20,10 @@ DEFAULT_METRICS = (
     "intelligence",
     "coding",
     "agentic",
+    "output-speed",
+    "time-to-first-token",
+    "time-to-first-answer-token",
+    "end-to-end-response-time",
 )
 
 

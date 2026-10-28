@@ -5,11 +5,11 @@ description: Compare specified AI models using Artificial Analysis data, especia
 
 # 模型性价比对比
 
-使用 Artificial Analysis 官方 REST API 查询用户指定的两个或多个模型，简洁地比较价格和能力。默认用中文回答；遵循用户指定的语言和格式。
+优先使用 Artificial Analysis 官方 REST API 比较模型的价格、能力和性能；必要时以其网页补充。默认用中文回答；遵循用户指定的语言和格式。
 
 ## 查询数据
 
-需要 Python 3 和已配置的环境变量 ARTIFICIAL_ANALYSIS_API_KEY。密钥只通过请求头发送，不要写进文件、命令参数或输出。缺少密钥时，说明需要先在 [Artificial Analysis Data API](https://artificialanalysis.ai/data-api) 申请并配置；不要改用网页抓取。
+需要 Python 3 和已配置的环境变量 ARTIFICIAL_ANALYSIS_API_KEY。密钥只通过请求头发送，不要写进文件、命令参数或输出。缺少密钥时，说明可在 [Artificial Analysis Data API](https://artificialanalysis.ai/data-api) 申请并配置；仍可使用网页上可验证的数据，并标注来源。
 
 使用本 skill 所在目录的脚本。实际调用时，将脚本路径替换为已读取 skill 的绝对路径：
 
@@ -24,6 +24,7 @@ python3 /path/to/compare-models/scripts/compare_models.py "Claude Sonnet 4" "GPT
 - 每百万 Token 输入价与输出价（USD）
 - AA Intelligence Index 每项任务成本（USD）
 - Intelligence、Coding、Agentic 指数
+- 输出速度、首 Token 时间、首个回答 Token 时间、端到端响应时间
 
 按用户当次要求，用 --include 增加指标或用 --exclude 暂时隐藏指标。可用指标名：
 
@@ -44,7 +45,9 @@ python3 /path/to/compare-models/scripts/compare_models.py "Claude Sonnet 4" "GPT
 
 ## 汇总对比
 
-读取脚本 JSON，输出紧凑的 Markdown 表格。按用户给出的顺序比较模型；显示每项数据、单位、相对第一款模型的差异百分比，以及更便宜或分数更高的一方。数据缺失时写“不可用”，不要猜测。
+读取脚本 JSON，按价格、能力、速度和延迟分组，用紧凑的 Markdown 表格比较。按用户给出的顺序显示数据、单位和相对第一款模型的差异百分比，并指出更优的一方；把多项共同缺失的数据合并说明，避免大量空行。根据问题选取相关领域指标和少数具体 benchmark（如编程问题优先编程与 Agent 基准），标明测试名称；用户要求详细数据时再展开。默认以表格为主，用户需要图表或历史走势时再提供。
+
+API 缺少相关数据时，查看 Artificial Analysis 网页补充可核实的数据，链接具体页面并标明来源、测量条件和口径。网页与 API 数值冲突时分别呈现，不强行合并；无法访问、需要登录或数据不可用时说明原因，不猜测。网页的历史走势、提示类型或延迟拆分仅在确实能核实时展示，不假定 API 与网页覆盖相同。
 
 task-cost 是 Artificial Analysis Intelligence Index 加权任务的成本，不等同于用户实际工作负载的成本。说明该口径，并避免据此推算用户的真实账单。不要将不同指标加权合成为一个自创总分；用一两句话概括价格、能力之间的取舍。
 
@@ -54,6 +57,6 @@ task-cost 是 Artificial Analysis Intelligence Index 加权任务的成本，不
 
 - 缺少密钥、认证失败、套餐限制、限流、网络错误或响应格式异常时，简洁报告具体原因和下一步。
 - 不输出密钥，不显示完整请求头，不将 API 错误解释为模型数值为零。
-- 对模型未覆盖的指标或不可用数据明确标注；不得用其他来源的数据悄悄补齐。
+- 对模型未覆盖的指标或不可用数据明确标注；不得悄悄混用数据来源或口径。
 
 数据字段以 [Artificial Analysis API 参考](https://artificialanalysis.ai/data-api/docs/reference) 为准。
